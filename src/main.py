@@ -1,7 +1,8 @@
 from textnode import *
 
 def main():
-    dummy_text = TextNode("This is a text node", TextType.NORMAL_TEXT)
+    dummy_text = TextNode("This is a text node", TextType.NORMAL)
     print(dummy_text)
 
-main()
+if __name__ == "__main__":
+    main()
