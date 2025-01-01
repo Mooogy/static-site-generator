@@ -1,6 +1,6 @@
 import unittest
 
-from htmlnode import HTMLNode, LeafNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 class TestHTMLNode(unittest.TestCase):
     def test_repr(self):
@@ -62,3 +62,35 @@ class TestLeafNode(unittest.TestCase):
         output = "This is just raw text!"
 
         self.assertEqual(node.to_html(), output)
+    
+    def test_to_html_no_value(self):
+        node = LeafNode("a", None, {"href": "https://www.google.com"})
+
+        self.assertRaises(ValueError, node.to_html)
+
+class TestParentNode(unittest.TestCase):
+    def test_to_html(self):
+        node = ParentNode("p", [LeafNode("b", "Bold text"),
+                                LeafNode(None, "Normal text"),
+                                LeafNode("i", "Italic text")])
+        expected_output = "<p><b>Bold text</b>Normal text<i>Italic text</i></p>"
+        self.assertEqual(node.to_html(), expected_output)
+    
+    def test_to_html_no_tag(self):
+        node = ParentNode(None, [LeafNode("b", "Bold text"),
+                                LeafNode(None, "Normal text"),
+                                LeafNode("i", "Italic text")])
+        self.assertRaises(ValueError, node.to_html)
+    
+    def test_to_html_no_children(self):
+        node = ParentNode("p", None, {"href": "https://www.google.com"})
+        self.assertRaises(ValueError, node.to_html)
+    
+    def test_to_html_nested_parent(self):
+        node = ParentNode("a", [ParentNode("p", [LeafNode("b", "Bold text"),
+                                LeafNode(None, "Normal text"),
+                                LeafNode("i", "Italic text")]),
+                                LeafNode(None, "Some more normal text")],
+                                {"href": "https://www.google.com"})
+        expected_output = "<a href=\"https://www.google.com\"><p><b>Bold text</b>Normal text<i>Italic text</i></p>Some more normal text</a>"
+        self.assertEqual(node.to_html(), expected_output)
