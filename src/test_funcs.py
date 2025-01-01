@@ -2,7 +2,7 @@ import unittest
 
 from textnode import *
 from htmlnode import *
-from main import text_node_to_html_node, split_nodes_delimiter
+from inline_funcs import split_nodes_delimiter, extract_markdown_images, extract_markdown_links
 
 class TestTextToHTML(unittest.TestCase):
     def test_normal_text(self):
@@ -124,6 +124,103 @@ class TestInlineMarkdown(unittest.TestCase):
             ],
             new_nodes,
         )
+
+class TestExtractMDLinks(unittest.TestCase):
+    def test_link_middle(self):
+        text = "This text has a link [to google.com](https://google.com). Check it out!"
+        links = extract_markdown_links(text)
+
+        self.assertEqual(
+            [
+                ("to google.com", "https://google.com")
+            ],
+            links)
+    
+    def test_link_middle_double(self):
+        text = "Which one is better, [google.com](https://google.com) or [bing.com](https://bing.com)? The world may never know!"
+        links = extract_markdown_links(text)
+
+        self.assertEqual(
+            [
+                ("google.com", "https://google.com"),
+                ("bing.com", "https://bing.com")
+            ],
+            links)
+
+    def test_link_end(self):
+        text = "I put this link at the end of the text, go watch some [YouTube](https://youtube.com)"
+        links = extract_markdown_links(text)
+
+        self.assertEqual(
+            [
+                ("YouTube", "https://youtube.com")
+            ],
+            links)
+    
+    def test_link_start_end(self):
+        text = "Go watch some [YouTube](https://youtube.com) or listen to some [Spotify](https://spotify.com)"
+        links = extract_markdown_links(text)
+
+        self.assertEqual(
+            [
+                ("YouTube", "https://youtube.com"),
+                ("Spotify", "https://spotify.com")
+            ],
+            links)
+    
+    def test_link_blank(self):
+        text = "Can you even click this link? [](https://youtube.com)"
+
+        self.assertRaises(ValueError, extract_markdown_links, text)
+    
+class TestExtractMDImages(unittest.TestCase):
+    def test_img_middle(self):
+        text = "Check out this cat: ![cat picture](link to cat photo) So cool!"
+
+        self.assertEqual(
+            [
+                ("cat picture", "link to cat photo")
+            ],
+            extract_markdown_images(text))  
+    
+    def test_img_double_middle(self):
+        text = "Cat picture: ![cat picture](link to cat photo) And a dog picture: ![dog picture](link to dog photo) So cute!"
+
+        self.assertEqual(
+            [
+                ("cat picture", "link to cat photo"),
+                ("dog picture", "link to dog photo")
+            ], 
+            extract_markdown_images(text))
+    
+    def test_img_end(self):
+        text = "Cat picture again?: ![cat picture 2](link to cat photo 2)"
+
+        self.assertEqual(
+            [
+                ("cat picture 2", "link to cat photo 2")
+            ],
+            extract_markdown_images(text))
+    
+    def test_img_begin_end(self):
+        text= "![dog picture](link to dog photo) Or ![dog picture 2](link to dog photo 2)"
+
+        self.assertEqual(
+            [
+                ("dog picture", "link to dog photo"),
+                ("dog picture 2", "link to dog photo 2")
+            ],
+            extract_markdown_images(text))
+    
+    def test_img_no_alt(self):
+        text = "Dog photo: ![](link to dog photo)"
+
+        self.assertRaises(ValueError, extract_markdown_images, text)
+    
+    def test_img_no_link(self):
+        text = "Dog photo: ![yay]()"
+
+        self.assertRaises(ValueError, extract_markdown_images, text)
 
 if __name__ == "__main__":
     unittest.main()
