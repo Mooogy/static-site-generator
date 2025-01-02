@@ -1,10 +1,12 @@
-from textnode import TextNode, TextType, text_to_text_node
-from block_funcs import markdown_to_block
+
+from block_funcs import block_to_html_node
 
 def main():
-    text = "# This is a heading\n\n\n\nThis is a paragraph of text. It has some **bold** and *italic* words inside of it.\n\n* This is the first list item in a list block\n* This is a list item\n* This is another list item\n"
+    block = """>I am quoting a famous person this quote is written over a couple of lines
+>I am not sure how this might be handled but it should be contained in a single quoteblock
+>despite however many lines I decide to **ABUSE**"""
 
-    print(markdown_to_block(text))
+    print(block_to_html_node(block).to_html())
 
 if __name__ == "__main__":
     main()
