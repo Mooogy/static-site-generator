@@ -16,7 +16,7 @@ class TestHTMLNode(unittest.TestCase):
             }
 
         node = HTMLNode("a", "Google", props=props)
-        expected_repr = "HTMLNode(<a>, Google, None, href=\"https://google.com\" target=\"blank\")"
+        expected_repr = "HTMLNode(<a>, \"Google\", None, href=\"https://google.com\" target=\"blank\")"
 
         self.assertEqual(repr(node), expected_repr)
     

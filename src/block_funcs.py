@@ -54,6 +54,14 @@ def block_to_block_type(block):
         return BLOCKTYPE.OLIST
     return BLOCKTYPE.PARAGRAPH
 
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_block(markdown)
+    children = []
+    for block in blocks:
+        html_node = block_to_html_node(block)
+        children.append(html_node)
+    return ParentNode("div", children)
+
 def block_to_html_node(block):
     block_type = block_to_block_type(block)
     match block_type:
@@ -120,7 +128,7 @@ def olist_to_html_node(block):
     lines = block.split("\n")
     list_items = []
     for line in lines:
-        children = text_to_children(line[2:])
+        children = text_to_children(line[3:])
         list_items.append(ParentNode("li", children))
     return ParentNode("ol", list_items)
 
@@ -130,7 +138,7 @@ def quote_to_html_node(block):
     for line in lines:
         if not line.startswith(">"):
             raise ValueError("Invalid quote block")
-        quote_lines.append(line.lstrip(">").rstrip())
+        quote_lines.append(line.lstrip(">").lstrip(" ").rstrip())
     
     text = " ".join(quote_lines)
     children = text_to_children(text)
