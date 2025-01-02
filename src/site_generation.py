@@ -66,3 +66,16 @@ def generate_page(from_path, template_path, dest_path):
     dest_file = open(dest_path, "w", encoding="utf-8")
     dest_file.write(filled_template)
     dest_file.close()
+
+def generate_pages_recursive(dir_path_content, template_path, dest_path):
+    if not os.path.exists(dir_path_content): raise ValueError("Content path does not exist")
+    content_paths = os.listdir(dir_path_content)
+
+    for path in content_paths:
+        combined_path = dir_path_content + "/" + path
+        combined_dest = dest_path + "/" + path
+        if os.path.isfile(combined_path):
+            html_file_path = combined_dest.rsplit(".", 1)[0] + ".html"
+            generate_page(combined_path, template_path, html_file_path)
+        elif os.path.isdir(combined_path):
+            generate_pages_recursive(combined_path, template_path, combined_dest)
