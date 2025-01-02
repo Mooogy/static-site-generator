@@ -1,51 +1,15 @@
 import unittest
 
-from textnode import *
-from htmlnode import *
-from inline_funcs import split_nodes_delimiter, extract_markdown_images, extract_markdown_links
+from textnode import TextNode, TextType
+from inline_funcs import (
+    split_nodes_delimiter,
+    split_nodes_link,
+    split_nodes_image,
+    extract_markdown_images,
+    extract_markdown_links
+    )
 
-class TestTextToHTML(unittest.TestCase):
-    def test_normal_text(self):
-        text_node = TextNode("This is normal text", TextType.NORMAL)
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "This is normal text"
-        self.assertEqual(expected, converted_html)
-    
-    def test_bold_text(self):
-        text_node = TextNode("This is bold text", TextType.BOLD)
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "<b>This is bold text</b>"
-        self.assertEqual(expected, converted_html)
-
-    def test_italic_text(self):
-        text_node = TextNode("This is italic text", TextType.ITALIC)
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "<i>This is italic text</i>"
-        self.assertEqual(expected, converted_html)
-    
-    def test_code_text(self):
-        text_node = TextNode("This is code text", TextType.CODE)
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "<code>This is code text</code>"
-        self.assertEqual(expected, converted_html)
-    
-    def test_link_text(self):
-        text_node = TextNode("This is a link", TextType.LINK, "https://google.com")
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "<a href=\"https://google.com\">This is a link</a>"
-        self.assertEqual(expected, converted_html)
-    
-    def test_image_text(self):
-        text_node = TextNode("Alt text for a 200x200 image", TextType.IMAGE, "https://picsum.photos/200")
-        converted_html = text_node_to_html_node(text_node).to_html()
-        expected = "<img alt=\"Alt text for a 200x200 image\" src=\"https://picsum.photos/200\"></img>"
-        self.assertEqual(expected, converted_html)
-    
-    def test_none_type(self):
-        text_node = TextNode("This doesn't have a TextType!", None)
-        self.assertRaises(ValueError, text_node_to_html_node, text_node)
-
-class TestInlineMarkdown(unittest.TestCase):
+class TestSplitDelim(unittest.TestCase):
     def test_delim_bold(self):
         node = TextNode("This is text with a **bolded** word", TextType.NORMAL)
         new_nodes = split_nodes_delimiter([node], "**", TextType.BOLD)
@@ -173,6 +137,15 @@ class TestExtractMDLinks(unittest.TestCase):
 
         self.assertRaises(ValueError, extract_markdown_links, text)
     
+    def test_link_and_image(self):
+        text = "[This is a link](https://youtube.com) and ![this is an image](image link)"
+
+        self.assertEqual(
+            [
+                ("This is a link", "https://youtube.com")
+            ],
+            extract_markdown_links(text))
+
 class TestExtractMDImages(unittest.TestCase):
     def test_img_middle(self):
         text = "Check out this cat: ![cat picture](link to cat photo) So cool!"
@@ -212,6 +185,15 @@ class TestExtractMDImages(unittest.TestCase):
             ],
             extract_markdown_images(text))
     
+    def test_img_and_link(self):
+        text= "![dog picture](link to dog photo) or [a link to a cat themed website](link)"
+
+        self.assertEqual(
+            [
+                ("dog picture", "link to dog photo"),
+            ],
+            extract_markdown_images(text))
+    
     def test_img_no_alt(self):
         text = "Dog photo: ![](link to dog photo)"
 
@@ -221,6 +203,92 @@ class TestExtractMDImages(unittest.TestCase):
         text = "Dog photo: ![yay]()"
 
         self.assertRaises(ValueError, extract_markdown_images, text)
+
+class TestSplitLink(unittest.TestCase):
+    def test_middle(self):
+        old_nodes = [TextNode("This text node has a link [to YouTube](https://youtube.com). Watch now!", TextType.NORMAL)]
+
+        self.assertEqual(
+            [
+                TextNode("This text node has a link ", TextType.NORMAL),
+                TextNode("to YouTube", TextType.LINK, "https://youtube.com"),
+                TextNode(". Watch now!", TextType.NORMAL)
+            ],
+            split_nodes_link(old_nodes))
+    
+    def test_start_end(self):
+        old_nodes = [TextNode("[Go to YouTube](https://youtube.com) or [go to Spotify](https://spotify.com)", TextType.NORMAL)]
+
+        self.assertEqual(
+            [
+                TextNode("Go to YouTube", TextType.LINK, "https://youtube.com"),
+                TextNode(" or ", TextType.NORMAL),
+                TextNode("go to Spotify", TextType.LINK, "https://spotify.com")
+            ],
+            split_nodes_link(old_nodes))
+    
+    def test_double_middle(self):
+        old_nodes = [TextNode("Do you listen to music on [YouTube](https://youtube.com) or [Spotify](https://spotify.com)? I use both!", TextType.NORMAL)]
+
+        self.assertEqual(
+            [
+                TextNode("Do you listen to music on ", TextType.NORMAL),
+                TextNode("YouTube", TextType.LINK, "https://youtube.com"),
+                TextNode(" or ", TextType.NORMAL),
+                TextNode("Spotify", TextType.LINK, "https://spotify.com"),
+                TextNode("? I use both!", TextType.NORMAL)
+            ],
+            split_nodes_link(old_nodes))
+
+class TestSplitImage(unittest.TestCase):
+    def test_middle(self):
+        old_nodes = [TextNode("This text has an image! ![image of a cat](cat link) How cute!!", TextType.NORMAL)]
+
+        self.assertEqual([
+            TextNode("This text has an image! ", TextType.NORMAL),
+            TextNode("image of a cat", TextType.IMAGE, "cat link"),
+            TextNode(" How cute!!", TextType.NORMAL)
+            ],
+            split_nodes_image(old_nodes))
+
+    def test_start_end(self):
+        old_nodes = [TextNode("![image of a cat](cat link) or ![image of a dog](dog link)", TextType.NORMAL)]
+
+        self.assertEqual([
+            TextNode("image of a cat", TextType.IMAGE, "cat link"),
+            TextNode(" or ", TextType.NORMAL),
+            TextNode("image of a dog", TextType.IMAGE, "dog link")
+            ],
+            split_nodes_image(old_nodes))
+
+    def test_double_middle(self):
+        old_nodes = [TextNode("This ![image of a cat](cat link) or ![image of a dog](dog link)? Choose now.", TextType.NORMAL)]
+
+        self.assertEqual([
+            TextNode("This ", TextType.NORMAL),
+            TextNode("image of a cat", TextType.IMAGE, "cat link"),
+            TextNode(" or ", TextType.NORMAL),
+            TextNode("image of a dog", TextType.IMAGE, "dog link"),
+            TextNode("? Choose now.", TextType.NORMAL)
+            ],
+            split_nodes_image(old_nodes))
+    
+    def test_single(self):
+        old_nodes = [TextNode("![image](image link)", TextType.NORMAL)]
+
+        self.assertEqual([
+            TextNode("image", TextType.IMAGE, "image link"),
+            ],
+            split_nodes_image(old_nodes))
+    
+    def test_with_link(self):
+        old_nodes = [TextNode("![image](image link) and [link](link)", TextType.NORMAL)]
+
+        self.assertEqual([
+            TextNode("image", TextType.IMAGE, "image link"),
+            TextNode(" and [link](link)", TextType.NORMAL)
+            ],
+            split_nodes_image(old_nodes))
 
 if __name__ == "__main__":
     unittest.main()
